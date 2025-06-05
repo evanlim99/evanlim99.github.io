@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Critical Mass Code Challenge - Evan Lim</title>
+
+    <!-- NOTE: There wasn't a mobile design in the zip file so I made a simple
+       vertical design for mobile
+    -->
+    <style type="text/css">
+      body {
+        background-color: #FFF;
+        color: #8B8B8B;
+        font-family: 'Helvetica', 'Arial', sans-serif;
+        font-size: 1rem;
+      }
+
+      #container {
+        margin: 0 auto;
+        max-width: 1024px;
+      }
+
+      #navbar {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        margin-top: 30px;
+      }
+
+      @media screen and (min-width: 768px) {
+        #navbar {
+          margin-top: 130px;
+        }
+      }
+
+      #navbar ul {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        margin: 0;
+        padding: 0;
+      }
+
+      @media screen and (min-width: 768px) {
+        #navbar ul {
+          flex-direction: row;
+          margin: 0 60px 0;
+        }
+      }
+
+      #navbar li {
+        list-style-type: none;
+        margin: 0 10px;
+        padding: 3px 0;
+        text-align: left;
+      }
+
+      @media screen and (min-width: 768px) {
+        #navbar li {
+          padding: 0 0 7px;
+          text-align: center;
+        }
+      }
+
+      #navbar li a {
+        color: #8B8B8B;
+        font-size: 0.8rem;
+        font-weight: 300;
+        letter-spacing: 0.5px;
+        text-decoration: none;
+      }
+
+      #navbar li a:hover {
+        color: #1A68BD;
+      }
+
+      #navbar li.selected a {
+        color: #000;
+      }
+
+      #city-navigation-wrapper {
+        position: relative;
+        width: 92%;
+      }
+
+      .city-navigation {
+        border-left: 1px solid #D3D3D3;
+        margin-left: 59px;
+        position: relative;
+      }
+
+      @media screen and (min-width: 768px) {
+        .city-navigation {
+          border-bottom: 1px solid #D3D3D3;
+          border-left: none;
+          margin-left: 0;
+        }
+      }
+
+      #slider {
+        display: none;
+        position: absolute;
+        top: 0;
+        transition: transform 200ms;
+        width: 0;
+      }
+
+      @media screen and (min-width: 768px) {
+        #slider {
+          margin: -1px 0 0;
+          position: relative;
+        }
+      }
+
+      #slider hr {
+        border-left: 1px solid #000;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        width: 0;
+      }
+
+      @media screen and (min-width: 768px) {
+        #slider hr {
+          border-left: none;
+          border-top: 1px solid #000;
+          height: 0;
+          width: auto;
+        }
+      }
+
+      #slider-wrapper {
+        align-items: center;
+        display: flex;
+        flex-direction: row-reverse;
+        height: 100%;
+        width: 60px;
+      }
+
+      @media screen and (min-width: 768px) {
+        #slider-wrapper {
+          display: block;
+          width: auto;
+        }
+      }
+
+      .city-time {
+        color: #8B8B8B;
+        font-size: 0.72rem;
+        text-align: center;
+        transition: all 200ms;
+        width: 150%;
+      }
+
+      @media screen and (min-width: 768px) {
+        .city-time {
+          margin-left: -25%;
+          padding-top: 10px;
+        }
+      }
+    </style>
+
+  </head>
+  <body>
+    <div id="container">
+      <div id="navbar">
+        <div id="city-navigation-wrapper">
+          <div id="slider">
+            <div id="slider-wrapper">
+              <hr>
+              <div class="city-time" aria-label="" aria-live="polite"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <script>
+    
+      /* NOTE: I added timezone offset to the JSON, I couldn't find a library that could get this info from the
+         city name. I also thought in real life the timezone might be the type of info that's provided in JSON
+      */
+      const cities = [
+        {
+          "section": "cupertino",
+          "label": "Cupertino",
+          "utcOffset": -8
+        },
+        {
+          "section": "new-york-city",
+          "label": "New York City",
+          "utcOffset" : -5
+        },
+        {
+          "section": "london",
+          "label": "London",
+          "utcOffset": 0
+        },
+        {
+          "section": "amsterdam",
+          "label": "Amsterdam",
+          "utcOffset": 1
+        },
+        {
+          "section": "tokyo",
+          "label": "Tokyo",
+          "utcOffset": 9
+        },
+        {
+          "section": "hong-kong",
+          "label": "Hong Kong",
+          "utcOffset": 8
+        },
+        {
+          "section": "sydney",
+          "label": "Sydney",
+          "utcOffset": 11
+        }
+      ]
+    
+
+      const container = document.querySelector('#city-navigation-wrapper');
+      
+      // Insert nav
+      let newNavElement = document.createElement('div');
+      newNavElement.classList.add('city-navigation');
+      let newNav = '<ul>';
+      for ( let i = 0; i < cities.length; i++ ) {
+        newNav += `<li class='city-list-item'><a href="#" id="${cities[i].section}" data-utc="${cities[i].utcOffset}" data-city="${cities[i].label}">${cities[i].label}</a></li>`;
+      }
+      newNav += '</ul>';
+      newNavElement.innerHTML = newNav;
+      container.prepend(newNavElement);
+
+      // Nav item click handlers
+      const navLink = document.querySelectorAll('.city-list-item');
+
+      function toggleClick() {
+        // Unselect all nav items
+        for ( let i = 0; i < navLink.length; i++ ) {
+          if ( navLink[i].classList.contains('selected') )
+            navLink[i].classList.remove('selected');
+        }
+        // Select clicked nav item
+        this.classList.toggle('selected');
+
+        // Show slider, update position and time
+        navSlider.style.display = 'block';
+        if ( window.innerWidth < 768 ) 
+          moveSliderVertical(this.offsetHeight, this.offsetTop);      // Mobile
+        else
+          moveSliderHorizontal(this.offsetWidth, this.offsetLeft);    // Tablet and desktop
+        
+        showTime(this.firstChild.dataset.utc, this.firstChild.dataset.city);
+      }
+      
+      // Add click handlers
+      for ( let i = 0; i < navLink.length; i++ ) {
+        navLink[i].addEventListener('click', toggleClick);
+      }
+
+      const navSlider = document.querySelector('#slider');
+
+      /* Initially position slider in the middle. I thought it would look
+         better sliding out from the middle rather than from left or right
+      */
+      if ( window.innerWidth >= 768 ) {
+        let containerMiddle = container.offsetWidth/2;
+        navSlider.style.transform = `translateX(${containerMiddle}px)`;
+      }
+
+      // Mobile
+      function moveSliderHorizontal(width, offset) {
+        navSlider.style.width = `${width}px`;
+        navSlider.style.transform = `translateX(${offset}px)`;
+      }
+
+      // Tablet and desktop
+      function moveSliderVertical(height, offset) {
+        navSlider.style.height = `${height}px`;
+        navSlider.style.transform = `translateY(${offset}px)`;
+      }
+
+      // Move slider on window resize
+      function windowResizeUpdate() {
+        navSlider.style.display = 'none';     // Hide slider so that it doesn't fly around
+        for ( let i = 0; i < navLink.length; i++ ) {
+          if ( navLink[i].classList.contains('selected') ) {
+            if ( window.innerWidth < 768 ) 
+              moveSliderVertical(navLink[i].offsetHeight, navLink[i].offsetTop);    // Mobile
+            else
+              moveSliderHorizontal(navLink[i].offsetWidth, navLink[i].offsetLeft);  // Tablet and desktop
+          }
+        }
+        navSlider.style.display = 'block';
+      }
+
+      window.onresize = windowResizeUpdate;
+
+      const cityTime = document.querySelector('.city-time');
+
+      // Show current time of selected city
+      function showTime(utcOffset, cityName) {
+        let today = new Date();
+
+        // Get UTC time by adding local time and local timezone offset(converted to ms)
+        let utc = today.getTime() + (today.getTimezoneOffset() * 60000);
+
+        // Convert to time zone
+        let cityDate = new Date(utc + (3600000 * utcOffset));
+
+        // Show hour and minutes only
+        cityTime.innerHTML = cityDate.toLocaleString([], {timeStyle: 'short'});
+        cityTime.setAttribute('aria-label', `${cityName} local time`);
+      }
+      
+
+    </script>
+
+  </body>
+</html>
